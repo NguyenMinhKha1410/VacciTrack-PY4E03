@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dữ Liệu Vaccine | VacciTrack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .main-bg {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+
+<body class="main-bg text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white/80 backdrop-blur-md border-b border-indigo-100 sticky top-0 z-50 shadow-sm flex-none">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3 group cursor-pointer" onclick="window.location.href='/'">
+                    <div class="bg-gradient-to-br from-indigo-600 to-violet-600 text-white p-2 rounded-lg shadow-lg group-hover:shadow-indigo-300 transition-shadow">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div>
+                        <span class="block text-lg font-bold text-slate-900 leading-none">Vacci<span class="text-indigo-600">Track</span></span>
+                        <span class="text-xs text-slate-500 font-medium">Data Hub</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <a href="/" class="px-3 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-white/50 rounded-lg transition">Trang chủ</a>
+                    <span class="px-3 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 rounded-lg border border-indigo-100 shadow-sm">Dữ liệu</span>
+                    <a href="/analytics" class="px-3 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-white/50 rounded-lg transition">Thống kê</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex flex-col p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full h-full overflow-hidden">
+        
+        <!-- Header & Search -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4 flex-none">
+            <div>
+                <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600 tracking-tight">Hồ Sơ Tiêm Chủng</h1>
+                <p class="text-slate-500 text-sm mt-1 font-medium">Dữ liệu chi tiết theo quốc gia, ngày tháng và loại vaccine.</p>
+            </div>
+            
+            <div class="relative w-full md:w-80 group">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-slate-400 group-focus-within:text-indigo-500 transition"></i>
+                </div>
+                <input type="text" id="searchInput" 
+                    class="block w-full pl-10 pr-10 py-2.5 bg-white border-2 border-slate-200 rounded-xl leading-5 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-0 sm:text-sm shadow-sm transition hover:border-indigo-300" 
+                    placeholder="Tìm quốc gia, vaccine..." autofocus>
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-slate-400 hover:text-rose-500 hidden transition" id="clearSearch">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Container (Glassmorphism) -->
+        <div class="glass-panel flex-grow flex flex-col overflow-hidden relative">
+            
+            <!-- Loading Overlay -->
+            <div id="loading" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm">
+                <div class="relative w-16 h-16 mb-3">
+                    <div class="absolute top-0 left-0 w-full h-full border-4 border-indigo-100 rounded-full"></div>
+                    <div class="absolute top-0 left-0 w-full h-full border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                </div>
+                <span class="text-indigo-700 font-bold animate-pulse">Đang kết nối API...</span>
+            </div>
+
+            <div class="overflow-auto flex-grow custom-scrollbar">
+                <table class="min-w-full divide-y divide-indigo-50">
+                    <thead class="bg-indigo-50/80 sticky top-0 z-10 backdrop-blur-sm">
+                        <tr>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-indigo-900 uppercase tracking-wider">Quốc gia</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-indigo-900 uppercase tracking-wider">Ngày ghi nhận</th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-indigo-900 uppercase tracking-wider">Tổng liều tiêm</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-indigo-900 uppercase tracking-wider">Loại Vaccine</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-indigo-900 uppercase tracking-wider">Nguồn</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vaccineTableBody" class="divide-y divide-indigo-50/50">
+                        <!-- Data rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer / Pagination -->
+            <div class="bg-white/50 border-t border-indigo-100 px-6 py-4 flex items-center justify-between flex-none z-10">
+                <div class="text-sm text-slate-500 font-medium">
+                    Hiển thị <span id="startRecord" class="font-bold text-slate-800">0</span> - <span id="endRecord" class="font-bold text-slate-800">0</span> trong <span id="totalRecords" class="font-bold text-indigo-600">0</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="previousPage()" class="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm font-medium" id="prevBtn">
+                        <i class="fas fa-chevron-left mr-1"></i> Trước
+                    </button>
+                    <span id="pageInfo" class="text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-100 shadow-inner">Trang 1</span>
+                    <button onclick="nextPage()" class="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm font-medium" id="nextBtn">
+                        Sau <i class="fas fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let allVaccines = [];
+        let filteredVaccines = [];
+        let currentPage = 1;
+        const rowsPerPage = 50; 
+        
+        // --- CHẾ ĐỘ DỮ LIỆU THẬT ---
+        // Đặt thành false để fetch từ API Flask
+        const useMockData = false; 
+
+        // Mock data để fallback (phòng hờ)
+        const mockData = [
+            { country: "Demo Mode", date: "2021-01-01", total_vaccinations: 0, vaccines: "No Data", source_name: "System", source_website: "#" }
+        ];
+
+        async function fetchVaccineData() {
+            try {
+                let data = [];
+                if (useMockData) {
+                    await new Promise(r => setTimeout(r, 600)); 
+                    data = mockData;
+                } else {
+                    // GỌI API THẬT TỪ FLASK
+                    const response = await fetch('/api/vaccines');
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    data = await response.json();
+                }
+
+                allVaccines = data;
+                filteredVaccines = allVaccines;
+                
+                document.getElementById('loading').classList.add('hidden');
+                displayTable();
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-server text-rose-500 text-4xl mb-2"></i>
+                        <p class="text-rose-600 font-bold">Không kết nối được Server</p>
+                        <p class="text-slate-500 text-sm mt-1">Hãy chắc chắn bạn đã chạy "python vaccines.py"</p>
+                        <button onclick="location.reload()" class="mt-3 px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-sm font-bold hover:bg-indigo-200">Thử lại</button>
+                    </div>`;
+            }
+        }
+
+        function displayTable() {
+            const tbody = document.getElementById('vaccineTableBody');
+            tbody.innerHTML = '';
+
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const paginatedData = filteredVaccines.slice(start, end);
+
+            if (paginatedData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-slate-400 flex flex-col items-center justify-center">
+                            <div class="bg-slate-50 p-4 rounded-full mb-3">
+                                <i class="fas fa-search text-2xl text-slate-300"></i>
+                            </div>
+                            <span class="font-medium">Không tìm thấy dữ liệu nào phù hợp.</span>
+                        </td>
+                    </tr>`;
+                updatePaginationInfo();
+                return;
+            }
+
+            paginatedData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-indigo-50/60 transition-colors duration-200 group";
+                
+                const totalVac = row.total_vaccinations 
+                    ? parseInt(row.total_vaccinations).toLocaleString('vi-VN') 
+                    : '<span class="text-slate-300 italic">N/A</span>';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-3 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-indigo-600 text-xs font-bold mr-3 shadow-sm border border-white">
+                                ${row.iso_code || '🌐'}
+                            </div>
+                            <div class="text-sm font-semibold text-slate-900">${row.country}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-600 font-mono bg-slate-50/30 rounded-lg">
+                        ${row.date}
+                    </td>
+                    <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-700 text-right font-bold font-mono">
+                        ${totalVac}
+                    </td>
+                    <td class="px-6 py-3 text-sm text-slate-500 max-w-xs truncate" title="${row.vaccines}">
+                        <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-medium border border-blue-100 truncate block">
+                            ${row.vaccines}
+                        </span>
+                    </td>
+                    <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-500">
+                        <a href="${row.source_website}" target="_blank" class="text-indigo-500 hover:text-indigo-700 hover:underline truncate block max-w-[150px] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                             ${row.source_name || 'Link nguồn'} <i class="fas fa-external-link-alt text-[10px] opacity-50"></i>
+                        </a>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            updatePaginationInfo();
+        }
+
+        function updatePaginationInfo() {
+            const start = filteredVaccines.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
+            const end = Math.min(currentPage * rowsPerPage, filteredVaccines.length);
+            const totalPages = Math.ceil(filteredVaccines.length / rowsPerPage);
+
+            document.getElementById('startRecord').textContent = start;
+            document.getElementById('endRecord').textContent = end;
+            document.getElementById('totalRecords').textContent = filteredVaccines.length.toLocaleString('vi-VN');
+            document.getElementById('pageInfo').textContent = `Trang ${currentPage} / ${totalPages || 1}`;
+
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages || totalPages === 0;
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredVaccines.length / rowsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayTable();
+            }
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                displayTable();
+            }
+        }
+
+        let searchTimeout;
+        const searchInput = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearSearch');
+
+        searchInput.addEventListener('input', function (e) {
+            const term = e.target.value;
+            clearBtn.classList.toggle('hidden', term === '');
+            
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const lowerTerm = term.toLowerCase();
+                if (lowerTerm === '') {
+                    filteredVaccines = allVaccines;
+                } else {
+                    filteredVaccines = allVaccines.filter(row => {
+                        return (row.country && row.country.toLowerCase().includes(lowerTerm)) || 
+                               (row.vaccines && row.vaccines.toLowerCase().includes(lowerTerm));
+                    });
+                }
+                currentPage = 1;
+                displayTable();
+            }, 300);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearBtn.classList.add('hidden');
+            searchInput.dispatchEvent(new Event('input'));
+            searchInput.focus();
+        });
+
+        document.addEventListener('DOMContentLoaded', fetchVaccineData);
+    </script>
+</body>
+</html>
